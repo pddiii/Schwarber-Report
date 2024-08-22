@@ -1,0 +1,268 @@
+---
+title: |
+  | \vspace{5cm} Battering the Ball and Flailing in the Field:
+  | The Kyle Schwarber Story
+author: |
+  | Peter D. DePaul III
+date: "08-22-2024"
+abstract: ""
+# bibliography: project_files/references.bib
+header-includes:
+  - \usepackage[usenames,dvipsnames]{xcolor}
+  - \usepackage[table]{xcolor}
+  - \usepackage{booktabs}
+output: 
+  bookdown::pdf_document2:
+    fig_width: 12
+    toc: no
+    number_sections: true
+linkcolor: blue
+urlcolor: blue
+citecolor: blue
+link-citations: yes
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r, echo=FALSE, out.width="100%", fig.align='center'}
+knitr::include_graphics("schwarbomb.png")
+```
+
+\newpage
+
+```{=latex}
+\hypersetup{linkcolor=black}
+\setcounter{tocdepth}{4}
+\hypersetup{linkcolor=blue}
+```
+\newpage
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(reticulate)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+```
+
+# Introduction
+
+The 2024 MLB season has been a rollercoaster due to the plethora of injured stars, and the unusually low run environment for hitters. For Philadelphia Phillies fans like myself, this has been an exciting year (Don't talk to me about after the All-Star break, I'm trying to stay positive). The Phillies are in their third year making a push for the World Series, and as of today are in 1st place in the MLB.
+
+As a lifelong Philadelphia sports fan, born and raised in the suburbs of the city, I've loved the Phillies since I was a little kid and I was even there for part of Game 5 of the 2008 World Series with my brother. This season, one player has stood out in particular: Kyle Schwarber. Now in his third season with the Phillies, Schwarber is not only my favorite player but also one of the most improved hitters in the league. His offensive production in 2024 has solidified his place as a top hitter in the MLB.
+
+This report will focus on Kyle Schwarber’s journey, highlighting his top-5 hitting performance between 2022 and 2024, his terrible fielding (sorry Kyle), and his talent as a designated hitter.
+
+# Schwarber's Sabermetrics
+
+In this section, I will focus primarily on Kyle Schwarber’s batting statistics. Since joining the Phillies, Schwarber has played about 40% of his games as the Designated Hitter (DH). DHs do not play in the field so their only responsibility is hitting during the game. This is important because, as any baseball fan will tell you, Schwarber’s performance in the field has often been less than ideal.
+
+By examining his sabermetrics since joining the Phillies in 2022, we gain deeper insights into why Schwarber has become one of the most productive hitters in baseball. His impact at the plate has been undeniable, and this analysis will showcase just how valuable he has been to not only the Phillies but all of baseball.
+
+## Schwarber's Fielding
+
+Kyle Schwarber’s struggles in the field aren't just a matter of opinion; they’re supported by both statistics and by the "eye test". Despite his best efforts, he has consistently ranked among the worst defenders in the league, particularly in the outfield. However, it’s important to understand why these struggles exist.
+
+Schwarber began his career as a catcher, a position that requires a good glove, an arm,  and the ability to command pitch calling rather than outfield range and speed. Transitioning from catcher to outfielder is a difficult adjustment for any player. Imagine Salvador Perez getting thrown into left field, that's basically what happened to Kyle Schwarber. Unfortunately, Schwarber’s biggest obstacle in the field has been his lack of speed.
+
+According to Statcast data, between 2022 and 2023, Schwarber ranked as the second slowest outfielder, only ahead of Jesse Winker as shown in the table below (Table \@ref(tab:spdTbl)). This lack of speed severely limits his ability to cover ground in the outfield, making him a defensive liability. 
+
+```{r spdTbl}
+jump_22 <- read_csv('data/jump_22.csv', show_col_types = FALSE)
+jump_23 <- read_csv('data/jump_23.csv', show_col_types = FALSE)
+jump_data <- bind_rows(jump_22, jump_23)
+jump_data <- 
+  jump_data %>% 
+  select(-year, -rel_league_bootup_distance) %>% 
+  rename(player_name = `last_name, first_name`,
+         player_id = resp_fielder_id,
+         outs_pct = outs_per_play,
+         burst_dist = rel_league_burst_distance,
+         react_dist = rel_league_reaction_distance,
+         route_dist = rel_league_routing_distance,
+         total_dist = f_bootup_distance) %>% 
+  mutate(player_name = str_split(player_name, ", ")) %>%
+  mutate(player_name = map_chr(player_name, ~ str_c(.x[2], .x[1], sep = " "))) %>%
+  group_by(player_name, player_id) %>% 
+  mutate(outs_above_average = sum(outs_above_average),
+         outs_pct = mean(outs_pct),
+         burst_dist = mean(burst_dist),
+         react_dist = mean(react_dist),
+         route_dist = mean(route_dist),
+         total_dist = mean(total_dist)
+         ) %>% 
+  ungroup() %>% 
+  distinct(player_name, player_id, .keep_all = TRUE) %>% 
+  mutate(across(c(outs_above_average:react_dist, total_dist), 
+                ~rank(-1 * ., ties.method="first") 
+                ),
+         route_dist = rank(route_dist, ties.method="first")
+         ) %>% 
+  rowwise() %>% 
+  mutate(fld_spd_rank = mean(c(burst_dist, react_dist, route_dist, total_dist))
+         ) %>% 
+  ungroup() %>% 
+  arrange(fld_spd_rank) %>% 
+  select(-n, -n_outs, -player_id)
+
+
+
+var_tbl <- 
+  jump_data %>% 
+  mutate(fld_spd_rank = rank(fld_spd_rank)) %>% 
+  select(-c(2:3)) %>% 
+  tail(5) %>% 
+  kbl(caption = "Top 10 Slowest Fielders (2022-2023)", booktabs = TRUE,
+      format = "latex") %>% 
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down"),
+                stripe_color = "#e6e6fa", font_size = 12) %>% 
+  row_spec(0, bold = TRUE, align = "c") %>% 
+  row_spec(4, bold = TRUE, background="yellow")
+var_tbl
+```
+
+\newpage 
+
+Unfortunately for Kyle Schwarber, his defensive struggles go beyond his lack of speed. It’s almost as if he was destined by the baseball gods to be a Designated Hitter. Data reveals that Schwarber is a historically poor fielder in almost every capacity.
+
+As shown in the table below (Table \@ref(tab:fldTbl)) since joining the Phillies in 2022, among MLB fielders (excluding catchers) with at least 1,000 innings played, Schwarber ranks last in several advanced defensive metrics. He sits at the bottom in Defensive Runs Saved (DRS), Outs Above Average (OAA), Fielding Runs Above Average (FRV), and Defensive Value (Def). His only saving grace is that he is second to last in Ultimate Zone Rating (UZR) and UZR/150.
+
+These numbers speak for themselves. Schwarber’s defensive struggles are well-documented, and they further elucidate that his true value lies in his ability to hit rather than field.
+
+```{r fldTbl}
+data <- read_csv('data/fg_fielding.csv', show_col_types = FALSE)
+data <- data %>% filter(Pos != "C")
+data <- 
+  data %>% 
+  mutate(across(c(DRS, UZR, `UZR/150`, OAA, FRV, Def), 
+                ~rank(-1 * ., ties.method="first")) 
+         ) %>% 
+  rowwise() %>% 
+  mutate(def_rank = round(mean( c(DRS, UZR, `UZR/150`, OAA, FRV, Def) ), 2)) %>% 
+  ungroup() %>% 
+  arrange(def_rank) %>% 
+  select(Name, Pos, Inn, DRS, UZR, `UZR/150`, OAA, FRV, Def, def_rank)
+
+fld_tbl <-
+  data %>% 
+  mutate(def_rank = rank(def_rank)) %>% 
+  tail(5) %>% 
+  kbl(caption = "Worst Fielders (2022-2023)", booktabs = TRUE,
+      format = "latex") %>% 
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down"),
+                stripe_color = "#e6e6fa", font_size = 12) %>% 
+  row_spec(0, bold = TRUE, align = "c") %>% 
+  row_spec(5, bold = TRUE, background="yellow")
+fld_tbl
+```
+
+## Schwarber's Hitting
+
+### Three True Outcomes
+
+Now, let's turn our attention to Kyle Schwarber's number one asset: his hitting prowess. While Schwarber may not be known for his contact hitting, he has built a reputation as one of baseball’s most powerful and consistent Three True Outcomes (TTO) players. The Three True Outcomes refer to the three possible results that don’t involve defense — strikeouts, walks, and home runs — and Schwarber does all three all the time.
+
+As show in the table below (Table \@ref(tab:ttoTbl)), Kyle Schwarber ranks 4th in MLB history in TTO percentage, with over 48% of his career plate appearances resulting in either a strikeout, walk, or home run. This remarkable statistic encapsulates Schwarber. A player who can change the game with one swing, draw a crucial walk (and unfortunately strikeout A LOT). For those unfamiliar with his style, this fact alone provides a clear picture of what to expect from Schwarber during a Plate Appearance.
+
+```{r ttoTbl}
+data <- read_csv("data/fg_tto.csv", show_col_types = FALSE)
+data <- 
+  data %>% 
+  mutate(TTO_pct = ((HR + BB + SO) / PA) * 100,
+         TTO_pct = round(TTO_pct, 2)) %>% 
+  arrange(desc(TTO_pct)) %>% 
+  filter(PA >= 4000) %>% 
+  select(Name, PA, HR, BB, SO, TTO_pct)
+
+tto_tbl <-
+  data %>% 
+  head(5) %>% 
+  kbl(caption = "The Three True Outcome Kings", booktabs = TRUE,
+      format = "latex") %>% 
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down"),
+                stripe_color = "#e6e6fa", font_size = 12) %>% 
+  row_spec(0, bold = TRUE, align = "c") %>% 
+  row_spec(4, bold = TRUE, background="yellow")
+tto_tbl
+```
+
+\newpage
+
+### Year over Year Difference
+
+I was inspired to investigate Kyle Schwarber’s year-over-year performance after watching a Phillies game last week, where I noticed he was batting .261 for the season (at the time of the at-bat). Since Schwarber hit just .197 in 2023, my jaw nearly hit the floor. Despite his low batting average last season, Schwarber still managed 47 home runs and 104 RBIs. However, his inability to even reach the Mendoza Line (a batting average of at least .200) highlighted how inefficient his 2023 season was at times.
+
+To better understand his remarkable improvement, I analyzed year-over-year differences in MLB hitting seasons with at least 450 plate appearances (PA) since 1871. The reason I’m so impressed by Schwarber's improvement is due to his hitting style. Power hitters like him rarely see such dramatic gains in batting average. To ensure a fair comparison, I carefully subset the data to match Schwarber’s performance profile, focusing on seasons with at least 450 PAs.
+
+In my analysis, I used various “plus” statistics to account for differing contexts and circumstances: wRC+, AVG+, BB%+, K%+, OBP+, SLG+, ISO+, and BABIP+. I used these metrics to further filter the data to ensure players in the comparison had similar performances to Schwarber in the current season. These metrics provide a more accurate picture of Schwarber’s drastic year-over-year improvement.
+
+```{r yoyTbl}
+data <- read_csv("data/filtered_data.csv", show_col_types = FALSE)
+data <- data %>% 
+  mutate(TTO_pct = TTO_pct * 100,
+         TTO_diff = TTO_diff * 100,
+         across(c(wRC_plus_diff:mean_hit_diff),
+                ~round(., digits = 2)
+                )
+         )
+
+data <- 
+  data %>% 
+  arrange(desc(mean_hit_diff)) %>% 
+  select(Name, Season, WAR_per_162_diff, mean_hit_diff, TTO_pct, TTO_diff)
+
+yoy_tbl <-
+  data %>% 
+  head(5) %>% 
+  kbl(caption = "Most Improved Hitters Year-over-Year", booktabs = TRUE,
+      format = "latex") %>% 
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down"),
+                stripe_color = "#e6e6fa", font_size = 12) %>% 
+  row_spec(0, bold = TRUE, align = "c") %>% 
+  row_spec(2, bold = TRUE, background="yellow")
+yoy_tbl
+```
+
+As shown in the table above (Table \@ref(tab:yoyTbl)), Kyle Schwarber's improvement this year ranks as the second-best among MLB hitters when considering these "plus" statistics. The `mean_hit_diff` column represents the average year-over-year difference in these metrics for each player. Schwarber's remarkable leap in 2024 is only surpassed by Mark McGwire's improvement from 1991 to 1992.
+
+McGwire’s situation is different than Schwarber's as he went from being mediocre in 1991 to an elite performer in 1992, finishing 4th in MLB in wRC+ and 2nd in home runs that year.
+
+Schwarber's dramatic improvement in 2024 underscores the significance of this season for him as a hitter. A key factor in his resurgence seems to be his ability to reduce his Three True Outcome (`TTO_pct`) reliance by cutting back on strikeouts and making more consistent contact. While Schwarber still excels at hitting home runs, his newfound ability to square up the ball more frequently has made him a more complete hitter, no longer solely focused on power.
+
+### Hitting since 2022
+
+```{r batRank}
+data <- read_csv("data/bat_ranks_22_24.csv", show_col_types = FALSE)
+bat_rank_tbl <-
+  data %>% 
+  mutate(hit_rank = rank(hit_rank)) %>% 
+  select(Name, HR, RBI, wOBA, `wRC+`, `BB%+`, `ISO+`, `Barrel%`, hit_rank) %>% 
+  head(5) %>% 
+  kbl(caption = "Best Hitters since 2022", booktabs = TRUE,
+      format = "latex") %>% 
+  kable_styling(latex_options = c("HOLD_position", "striped", "scale_down"),
+                stripe_color = "#e6e6fa", font_size = 12) %>% 
+  row_spec(0, bold = TRUE, align = "c") %>% 
+  row_spec(5, bold = TRUE, background="yellow")
+bat_rank_tbl
+```
+
+As shown in the table above (Table \@ref(tab:batRank)), since joining the Phillies in 2022, Kyle Schwarber has ranked as the 5th best hitter based on the selected statistics. I chose these stats because I believe these best capture the overall production of a hitter—focusing on what truly matters: producing runs, consistently squaring up the ball, and getting on base.
+
+Schwarber excels in these key areas, particularly in drawing walks, hitting for power, and barreling the ball. For those unfamiliar with the term "Barrel," here is the definition from Statcast's glossary:
+
+> **Barrel:** A batted ball with the perfect combination of exit velocity and launch angle, or the most high-value batted balls. (A barrel has a minimum Expected Batting Average of .500 and Expected Slugging Percentage of 1.500.)
+
+His Barrel rate further emphasizes Schwarber's exceptional ability to generate high-quality contact. While he may not hit for average as well as some of the hitters ranked above him, his high ISO+ and Barrel% demonstrate his undeniable talent at the plate. Schwarber's hitting prowess, defined by his ability to generate power and drive in runs, is remarkable and key to his overall success.
+
+# A Thanks to Schwarber
+
+Kyle Schwarber has been a divisive figure, not only in Philadelphia but throughout the baseball community. Some love him, while others criticize his reliance on the Three True Outcomes. His consistent production, despite his low average, sets him apart and makes him one of the most unique hitters in the MLB. Even Pete Alonso, a comparable power hitter since 2022, still hits nearly 25 points higher with a .244 average.
+
+All in all I want to thank Kyle Schwarber for the production he has offered for the Phillies over the past 3 seasons. Not only has he shown to be an incredible hitter in terms of the regular season but he's been a stud in the postseason as well with a WRC+ of 160, and the most home runs with 11. Unfortunately we had to do him wrong by putting him in the outfield due to injury, and lack of defensive depth for his first 2 years. Hopefully he can continue down this path of dominance now that he has a chance to focus on hitting.
+
+Thank you Kyle Schwarber for what you have done for the sport of baseball. Thank you for what you have done for the Phillies baseball. Thank you for how you are forever changing the leadoff hitting spot. You truly are one of a kind. 
+
+Let's hope for the best for the Phillies. Go Phils! Go Schwarber!
+
